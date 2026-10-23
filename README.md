@@ -1,104 +1,258 @@
-﻿# Bank Data Integrity Guard (BDIG)
+﻿<div align="center">
 
-**Status: protótipo local demonstrável — sem IA/LLM, sem dados reais e sem integração com bancos.**
+# 🛡️ Bank Data Integrity Guard
+### BDIG · Deterministic Banking Data Integrity
 
-Motor determinístico de auditoria de integridade para demonstrar comparação de duas fotografias de transações financeiras fictícias. Inspirado em desafios de pipelines de dados Raw/Bronze → Silver → Gold, com plano de expansão para SQL, Python, PySpark/Spark, Kafka, Airflow e APIs.
+**Auditoria determinística de dados em todas as camadas — independente da tecnologia e do uso de IA**
 
-## Princípios
+![Status](https://img.shields.io/badge/status-prot%C3%B3tipo_local-blue)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Tests](https://img.shields.io/badge/testes-8_definidos-informational)
+![Data](https://img.shields.io/badge/dados-100%25_sint%C3%A9ticos-success)
+![Security](https://img.shields.io/badge/uso-produ%C3%A7%C3%A3o_n%C3%A3o_validado-orange)
 
-- **Zero LLM/IA:** regras rastreáveis, testáveis e reproduzíveis.
-- **Dados sintéticos apenas:** não carregar informações de MAPFRE, Santander, Target ou clientes.
-- **Isolamento:** nenhuma conexão bancária ou credencial corporativa.
-- **Zero confiança implícita:** a fotografia confiável deve vir de captura e custódia independentes.
-- **Evidências ≠ prova de fraude:** mudanças legítimas e adulterações exigem investigação distinta.
+[Visão geral](#-visão-geral) · [Arquitetura](#-arquitetura-de-referência) · [Metodologia](#-metodologia-de-verificação) · [Execução](#-executando-localmente) · [Roadmap](#-roadmap)
 
-## Componentes e status
+</div>
 
-| Componente | Implementação atual |
-|---|---|
-| Python 3.11+ e CSV | Sim |
-| R1 modificação (chave igual / campos diferentes) | Sim |
-| R2 inclusão (chave nova) | Sim |
-| R3 exclusão (chave ausente) | Sim |
-| Proteção contra chave duplicada e schema divergente | Sim |
-| Hash SHA-256 do CSV + manifesto HMAC | Sim (demonstração) |
-| R4 auditoria transformação Raw/Silver/Gold | Não (planejado) |
-| CDC, Spark, Kafka, Airflow, APIs, WORM | Não (planejado) |
+---
 
-## Arquitetura
+## 🎯 Visão geral
 
-Consulte [diagrama Mermaid e modelo de ameaças](docs/architecture.md) e [plano por fases](docs/implementation-plan.md).
+O **Bank Data Integrity Guard (BDIG)** é um projeto de engenharia de segurança de dados para detectar **divergências entre duas fotografias (snapshots)** de registros financeiros. Seu núcleo atual é um comparador determinístico de arquivos CSV sintéticos, com validações de chave e esquema e demonstração de evidências criptográficas.
 
-## Windows / PowerShell — passo a passo
+O objetivo de longo prazo é auditar **dados em qualquer camada de processamento** — origem, ingestão, Raw/Bronze, Silver, Gold, APIs, aplicações, relatórios e entradas/saídas de sistemas de IA — independentemente do fornecedor ou tecnologia. O BDIG busca identificar mudanças inesperadas, violações de contratos e operações não autorizadas, com políticas de bloqueio e revisão humana quando aplicável. **A detecção de uma diferença não prova fraude, comprometimento por IA ou ausência de autorização.**
 
-Pré-requisitos: **Windows + PowerShell 7 recomendado**, **Python 3.11+** com `py` disponível e Git. No PowerShell abra a pasta do projeto.
+> **Estado atual — v0.2.0 (POC):** execução local, dados fictícios, sem conexões com instituições financeiras e sem IA/LLM. Conectores, rastreamento de transformações e mecanismos de custódia independente permanecem no roadmap.
 
-```powershell
-# Descompacte o ZIP numa pasta de trabalho e entre nela
-cd .\bank-data-integrity-guard
+## 🧭 Missão: integridade de ponta a ponta, inclusive para IA
 
-# Configura Python e executa testes
-pwsh -NoProfile -File .\scripts\setup-windows.ps1
+O BDIG pretende funcionar como uma **camada externa de confiança**, desacoplada dos motores de processamento e dos modelos de IA. Seu papel é verificar dados e decisões automatizadas **contra regras, contratos, autorizações e evidências independentes**, e não confiar cegamente no resultado produzido por um sistema.
 
-# Captura dois manifests HMAC de dados fictícios, verifica e compara
-pwsh -NoProfile -File .\scripts\demo-windows.ps1
+**Escopo futuro:** verificação por camada e entre camadas; linhagem e reconciliação; detecção de perda, duplicidade e alteração de registros; validação de schema, tipos, chaves, totais e regras de negócio; inspeção de entradas e saídas de IA; segregação de funções; quarentena ou bloqueio de ações de alto risco; trilha de auditoria e revisão humana. Cada integração precisará de adaptadores e contratos específicos.
+
+**Limite essencial:** não é possível prometer que uma IA *nunca* erre. A meta de engenharia é reduzir a probabilidade e o impacto de erros, detectar violações verificáveis e impedir ações fora das políticas estabelecidas. A POC v0.2 **não** monitora, controla nem bloqueia sistemas de IA.
+
+## 🧭 Problema e proposta de valor
+
+Em pipelines financeiros, alterações podem resultar de operações legítimas, erros de integração, regras incorretas, falhas operacionais ou atividades maliciosas. Um relatório final isolado não basta para reconstruir o histórico dessas mudanças.
+
+O BDIG propõe um processo reproduzível de **comparação de estados**, **registro de evidências** e, futuramente, **correlação com eventos de execução e autorização**, sem delegar decisões a modelos generativos.
+
+### Princípios de engenharia
+
+- **Núcleo sem IA/LLM:** comparação baseada em regras explícitas, reproduzíveis e testáveis; sistemas com IA poderão ser auditados futuramente.
+- **Dados sintéticos:** nenhuma informação real de MAPFRE, Santander, Target ou clientes.
+- **Isolamento:** sem conexões bancárias, credenciais corporativas ou operações de pagamento.
+- **Linha de base confiável:** no produto futuro, capturada e custodiada independentemente do sistema auditado.
+- **Segurança verificável:** evidências devem ser autenticadas; hash isolado não comprova origem ou imutabilidade.
+- **Transparência:** separar funcionalidade implementada, demonstrada e planejada.
+
+## 🏗️ Arquitetura de referência
+
+```mermaid
+flowchart TB
+    subgraph Origem[Fontes fictícias / futuras integrações]
+        DB[(Banco SQL)]
+        API[APIs]
+        EVT[Eventos / CDC]
+    end
+    subgraph Medalhao[Arquitetura de dados - visão futura]
+        RAW[Raw / Bronze] --> SIL[Silver] --> GOLD[Gold]
+    end
+    DB -. planejado .-> RAW
+    API -. planejado .-> RAW
+    EVT -. planejado .-> RAW
+    subgraph POC[BDIG v0.2 - implementado]
+        BEFORE[before.csv] --> CORE[Motor determinístico]
+        AFTER[after.csv] --> CORE
+        CORE --> R1[R1 · Alteração]
+        CORE --> R2[R2 · Inclusão]
+        CORE --> R3[R3 · Exclusão]
+        BEFORE --> EVID[SHA-256 + manifesto HMAC]
+        AFTER --> EVID
+        CORE --> REPORT[Relatório JSON]
+    end
+    RAW -. futuros snapshots .-> BEFORE
+    GOLD -. futuros snapshots .-> AFTER
+    subgraph Futuro[Controles planejados]
+        AUTH[Eventos de autorização]
+        LINEAGE[Linhagem e regras de transformação]
+        WORM[Custódia imutável / KMS-HSM]
+    end
+    REPORT -. correlação futura .-> AUTH
+    REPORT -. validação futura .-> LINEAGE
+    EVID -. armazenamento futuro .-> WORM
 ```
 
-Se já estiver no PowerShell 7, também é possível rodar `.\scripts\setup-windows.ps1` e `.\scripts\demo-windows.ps1`. Caso use Windows PowerShell 5.1, instale `pwsh` 7 para suportar a geração de chave aleatória do exemplo.
+**Importante:** a comparação entre Raw e Gold exige regras de transformação e contratos específicos. Não é correto comparar diretamente registros de granularidades diferentes como se fossem snapshots equivalentes.
 
-**Resultado esperado:** TX002 alterada (R1), TX004 incluída (R2), TX003 excluída (R3), TX001 preservada. Report JSON em `artifacts/demo`, ignorado pelo Git.
+Documentos complementares: [arquitetura](docs/architecture.md), [metodologia](docs/methodology.md), [segurança](docs/security.md), [conectores](docs/connectors.md) e [plano de implementação](docs/implementation-plan.md).
 
-**Observação sobre chaves:** `demo-windows.ps1` cria chave nova e a apaga no fim; manifestos não serão verificáveis após encerrar a execução. Em produção, é obrigatório um serviço de chaves (KMS/HSM), política de rotação e cadeia de custódia independente. Não colocar segredos no Git.
+## 🔎 Metodologia de verificação
 
-## Execução manual (sem scripts)
+| Regra | Pergunta | Critério inicial da POC | Resultado |
+|---|---|---|---|
+| **R1 — Alteração** | Um registro mudou? | Mesma chave; fingerprint dos campos diferente | Chave modificada |
+| **R2 — Inclusão** | Surgiu um registro? | Chave presente apenas no snapshot posterior | Chave incluída |
+| **R3 — Exclusão** | Um registro desapareceu? | Chave presente apenas no snapshot anterior | Chave excluída |
+| **R4 — Transformação** | Uma transformação mudou indevidamente os dados? | Contratos e linhagem por camada | **Planejado** |
 
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv\Scripts\python.exe -m bankguard.cli compare examples/before.csv examples/after.csv --key transaction_id --output artifacts/report.json
-```
+**Fluxo metodológico:** definir contrato → obter linha de base → validar esquema e unicidade → autenticar evidências disponíveis → comparar snapshots → registrar divergências → investigar legitimidade com logs e autorizações (futuro).
 
-## Publicação GitHub — somente após conferir localmente
+### Demonstração com transações fictícias
 
-```powershell
-git init
-git branch -M main
-git add .
-git status
-git commit -m "feat: initial deterministic bank integrity guard"
-# Crie no GitHub um repositório vazio (não gere README automático)
-git remote add origin https://github.com/SEU_USUARIO/bank-data-integrity-guard.git
-git push -u origin main
-```
+| Transação | Antes | Depois | Classificação |
+|---|---|---|---|
+| TX001 | R$ 100,00 · SETTLED | R$ 100,00 · SETTLED | Sem alteração |
+| TX002 | R$ 200,00 · PENDING | R$ 250,00 · PENDING | **R1** |
+| TX003 | R$ 300,00 · SETTLED | Ausente | **R3** |
+| TX004 | Ausente | R$ 150,00 · PENDING | **R2** |
 
-Verifique antes do commit que `git status` não inclui chaves, dados privados, `.venv`, relatórios ou artefatos. Os comandos acima **não executam publicação automaticamente**.
+Esses valores são **exclusivamente sintéticos**. A POC compara campos textuais de CSV; ainda não implementa um modelo monetário baseado em `Decimal`.
 
-## Estrutura
+## 🧩 Componentes e maturidade
+
+| Componente | Situação | Observação |
+|---|---|---|
+| `src/bankguard/core.py` | **Implementado** | Leitura CSV, fingerprint e regras R1–R3 |
+| `src/bankguard/evidence.py` | **Implementado (POC)** | Hash SHA-256 e autenticação HMAC de manifesto |
+| `src/bankguard/cli.py` | **Implementado** | Interface de linha de comando |
+| `config/contract.example.json` | **Exemplo** | Contrato declarativo; integração completa pendente |
+| `tests/test_core.py` | **3 testes definidos** | Regras, fingerprint e chave ausente |
+| `tests/test_evidence.py` | **5 testes definidos** | Captura, adulteração, sobrescrita e chave curta |
+| Raw/Bronze, Silver, Gold e outras camadas | **Planejado** | Auditoria de transformações, contratos e reconciliação entre camadas |
+| Governança de dados utilizados por IA | **Planejado** | Verificação de entradas, saídas, políticas e autorizações; sem garantia absoluta de ausência de erros |
+| SQL, Spark/PySpark, Kafka, Airflow, APIs e CDC | **Planejado** | Nenhum conector operacional declarado |
+| Snapshots consistentes, WORM, KMS/HSM | **Planejado** | Necessários para custódia robusta |
+
+A existência dos oito testes foi identificada no inventário; a execução deve ser comprovada no ambiente atual antes de atualizar um selo para **8 passando**.
+
+## 🗂️ Estrutura do repositório
 
 ```text
 bank-data-integrity-guard/
-├── src/bankguard/{core.py,evidence.py,cli.py}
-├── tests/{test_core.py,test_evidence.py}
-├── examples/{before.csv,after.csv}
-├── scripts/{setup-windows.ps1,demo-windows.ps1}
-├── docs/{architecture.md,implementation-plan.md,methodology.md,security.md,connectors.md,roadmap.md,commercial.md}
-├── config/contract.example.json
 ├── .github/workflows/ci.yml
+├── config/contract.example.json
+├── docs/
+│   ├── architecture.md
+│   ├── commercial.md
+│   ├── connectors.md
+│   ├── implementation-plan.md
+│   ├── methodology.md
+│   ├── roadmap.md
+│   └── security.md
+├── examples/
+│   ├── before.csv
+│   └── after.csv
+├── scripts/
+│   ├── audit-project.ps1
+│   ├── demo-windows.ps1
+│   └── setup-windows.ps1
+├── src/bankguard/
+│   ├── __init__.py
+│   ├── cli.py
+│   ├── core.py
+│   └── evidence.py
+├── tests/
+│   ├── test_core.py
+│   └── test_evidence.py
+├── .gitignore
 ├── pyproject.toml
 └── README.md
 ```
 
-## Limites de segurança da POC
+## 💻 Executando localmente
 
-A verificação valida conteúdo de arquivos comparado ao manifesto **somente se a chave HMAC for confiável e estiver protegida**. Não cria snapshots transacionalmente consistentes nem armazenamento imutável. O arquivo de exemplo tem valores CSV textuais, não modelos financeiros com `Decimal`. Ainda não detecta alterações transitórias, nem distingue alteração legítima de fraude. Não utilizar como sistema de defesa bancária em produção.
+**Pré-requisitos:** Windows, Python 3.11+ e PowerShell 7 recomendado. O projeto não requer acesso a sistemas bancários. **Atenção:** o script `setup-windows.ps1` da v0.2 exige o comando `py`; apenas `python` no PATH não é suficiente para esse script.
 
-## Verificação de qualidade
+**Se o PowerShell bloquear o script por assinatura:** confira `Get-ExecutionPolicy -List` e a procedência do arquivo. Se houver marca de origem da internet e você tiver revisado o script, use `Unblock-File .\scripts\setup-windows.ps1`. Políticas corporativas que exigem assinatura devem ser respeitadas; nesse caso, prefira a instalação manual abaixo. Não desabilite globalmente as proteções de execução.
+
+```powershell
+# Abra a pasta que contém pyproject.toml
+cd .\bank-data-integrity-guard
+
+# Configure o ambiente e execute os testes
+pwsh -NoProfile -File .\scripts\setup-windows.ps1
+
+# Execute a demonstração com dados fictícios
+pwsh -NoProfile -File .\scripts\demo-windows.ps1
+```
+
+Se estiver usando apenas Windows PowerShell 5.1, prefira executar os scripts de demonstração com `pwsh` 7, conforme os pré-requisitos atuais.
+
+### Execução manual (sem executar scripts `.ps1`)
+
+Caso o script seja bloqueado ou o launcher `py` não esteja disponível, instale o Python 3.11+ e, no terminal PowerShell, execute:
+
+```powershell
+python --version
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m bankguard.cli compare examples/before.csv examples/after.csv --key transaction_id --output artifacts/report.json
+```
+
+**Nota:** se `python --version` abrir o atalho da Microsoft Store, instale Python de verdade e reabra o terminal. Não execute comandos de teste até o interpretador funcionar.
+
+**Saída esperada do exemplo:** TX002 modificada, TX004 incluída, TX003 excluída e TX001 inalterada. O resultado deve ser confirmado executando os comandos na versão publicada.
+
+### Evidências criptográficas: escopo e limitações
+
+A demonstração usa SHA-256 para identificar alterações no conteúdo do CSV e HMAC para autenticar o manifesto **enquanto a chave secreta permanecer confiável**. O script de demonstração cria uma chave temporária e a descarta ao finalizar; portanto, os manifestos não permanecem verificáveis em execuções posteriores sem essa chave.
+
+**Não há**, nesta versão, garantia de imutabilidade, assinatura independente, timestamp confiável ou captura transacionalmente consistente. O sistema não prova autoria da alteração nem identifica automaticamente fraude.
+
+## 🧪 Qualidade e testes
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-CI disponível em `.github/workflows/ci.yml` após publicação. Etapas futuras têm critérios de aceite em `docs/implementation-plan.md`.
+Os testes definidos cobrem comparação de snapshots, fingerprint, validação de chave, verificação de manifesto, adulteração de dados e manifesto, proteção contra sobrescrita e rejeição de chave curta. O workflow de CI está em `.github/workflows/ci.yml`; seu funcionamento no GitHub deverá ser verificado após a publicação.
 
-## Licença e uso comercial
+## 🔐 Modelo de segurança
 
-Licença ainda não selecionada. Antes de distribuir ou comercializar, definir licença, autoria, estratégia de propriedade intelectual, política de segurança e requisitos contratuais/regulatórios.
+**Ameaças consideradas:** alteração indevida de registros, exclusão ou inclusão inesperada, manipulação de artefatos, erros de pipeline e uso indevido de permissões.
+
+**Controles atuais:** validações determinísticas locais, comparação por chave, checagem de esquema, hash e HMAC demonstrativos.
+
+**Controles ainda necessários:** captura independente, logs de eventos e autorizações, controle de acesso por menor privilégio, custódia imutável, KMS/HSM, gestão de chaves, observabilidade e validação de consistência temporal.
+
+> O BDIG **não executa pagamentos, não acessa contas bancárias e não é um sistema homologado para produção**. Qualquer piloto empresarial exigirá autorização formal, avaliação de riscos e requisitos de segurança e conformidade aplicáveis.
+
+## 🗺️ Roadmap
+
+| Fase | Entrega | Status |
+|---|---|---|
+| **0.1–0.2** | Comparação CSV R1–R3 e evidências HMAC locais | Protótipo implementado |
+| **0.3** | Relatórios estruturados, contratos versionados e cenários de teste ampliados | Planejado |
+| **0.4** | Simulador bancário sintético Raw/Bronze → Silver → Gold | Planejado |
+| **0.5** | R4: linhagem, regras de transformação e reconciliação por camada | Planejado |
+| **0.6** | Conectores de leitura para SQL, APIs e pipelines | Planejado |
+| **0.7** | Integrações Spark, Kafka, Airflow e CDC | Planejado |
+| **1.0** | Custódia independente, trilha auditável e validação de segurança | Meta futura, sujeita a critérios de aceite |
+
+Consulte [roadmap detalhado](docs/roadmap.md) e [plano por fases](docs/implementation-plan.md).
+
+## 🏦 Aplicações potenciais
+
+A solução é concebida para, futuramente, apoiar equipes de engenharia de dados, segurança, controles internos e auditoria de instituições financeiras em processos de reconciliação, monitoramento de integridade e investigação de mudanças. **Não há implantação, homologação ou parceria declarada com bancos ou seguradoras.**
+
+## 🤝 Contribuições e governança
+
+O projeto encontra-se em fase experimental. Antes de aceitar contribuições externas, serão definidos fluxo de revisão, política de divulgação de vulnerabilidades, critérios de testes e responsabilidades de manutenção. Nunca abra issues contendo credenciais ou dados financeiros reais.
+
+## ⚖️ Licença, propriedade intelectual e uso comercial
+
+**Licença ainda não definida.** A disponibilidade pública do código não significa concessão automática de direitos de reutilização, redistribuição ou comercialização. Antes da distribuição comercial, será necessário definir licença, autoria, titularidade, política de segurança e requisitos contratuais/regulatórios.
+
+---
+
+<div align="center">
+
+**BDIG · Integridade verificável. Evidências reproduzíveis. Segurança por desenho.**
+
+*Projeto experimental de engenharia de segurança de dados — sem IA e com dados sintéticos.*
+
+</div>
