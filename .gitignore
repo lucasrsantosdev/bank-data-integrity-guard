@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+*.log
+comparison.json
+*.db
+*.sqlite
+*.sqlite3
+*.parquet
+secrets/
+private/
+data/
+artifacts/
+*.key

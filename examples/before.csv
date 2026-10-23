@@ -1,0 +1,4 @@
+transaction_id,account_id,amount,status
+TX001,A001,100.00,SETTLED
+TX002,A001,200.00,PENDING
+TX003,A002,300.00,SETTLED

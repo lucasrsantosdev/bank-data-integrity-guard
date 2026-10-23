@@ -1,0 +1,11 @@
+{
+  "domain": "banking_payments_synthetic",
+  "dataset": "transactions",
+  "key": ["transaction_id"],
+  "expected_fields": ["transaction_id", "account_id", "amount", "status"],
+  "time_consistency": "PENDING: watermark/LSN and transactionally consistent snapshot",
+  "sensitive_fields": [],
+  "permissions": "read-only",
+  "approval_source": "PENDING: event/approval log",
+  "schema_version": "0.1.0"
+}

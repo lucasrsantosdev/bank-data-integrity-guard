@@ -1,0 +1,263 @@
+﻿========================================================
+AEGISBANK - INVENTARIO TECNICO COMPLETO
+========================================================
+Data: 2026-10-23 00:07:25
+Diretorio: C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard
+
+=== 1. ESTRUTURA COMPLETA DO PROJETO ===
+.gitignore | 147 bytes
+pyproject.toml | 361 bytes
+README.md | 5015 bytes
+.github\workflows\ci.yml | 294 bytes
+config\contract.example.json | 403 bytes
+docs\architecture.md | 1645 bytes
+docs\commercial.md | 940 bytes
+docs\connectors.md | 934 bytes
+docs\implementation-plan.md | 1082 bytes
+docs\methodology.md | 2020 bytes
+docs\roadmap.md | 927 bytes
+docs\security.md | 1031 bytes
+examples\after.csv | 118 bytes
+examples\before.csv | 118 bytes
+scripts\audit-project.ps1 | 10966 bytes
+scripts\demo-windows.ps1 | 1616 bytes
+scripts\setup-windows.ps1 | 677 bytes
+src\bankguard\cli.py | 1964 bytes
+src\bankguard\core.py | 2283 bytes
+src\bankguard\evidence.py | 2601 bytes
+src\bankguard\__init__.py | 22 bytes
+tests\test_core.py | 1006 bytes
+tests\test_evidence.py | 1972 bytes
+
+=== 2. MODULOS PYTHON ===
+
+MODULO: C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py
+LINHAS: 39
+Linha 9: def main():
+
+MODULO: C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py
+LINHAS: 42
+Linha 8: def load_csv(path, key):
+Linha 25: def fingerprint(row):
+Linha 29: def compare(before, after, key):
+
+MODULO: C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py
+LINHAS: 52
+Linha 11: def _digest(path):
+Linha 19: def _canonical(obj):
+Linha 23: def _secret():
+Linha 30: def capture(csv_path, manifest_path, key_field):
+Linha 51: def verify(csv_path, manifest_path):
+
+MODULO: C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\__init__.py
+LINHAS: 1
+
+=== 3. DEPENDENCIAS E CONFIGURACAO ===
+
+ARQUIVO: pyproject.toml
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "bank-data-integrity-guard"
+version = "0.2.0"
+description = "Deterministic financial snapshot verification POC using synthetic data"
+requires-python = ">=3.11"
+[project.scripts]
+bankguard = "bankguard.cli:main"
+[tool.setuptools.packages.find]
+where = ["src"]
+
+=== 4. MECANISMOS DE SEGURANCA ===
+
+BUSCA: sha256
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:27 return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:12 h = hashlib.sha256()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:36 'file_sha256': _digest(csv_path),
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:42 tag = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:43 output = {'payload': payload, 'hmac_sha256': tag}
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:48 return {'manifest': str(manifest_path), 'row_count': len(rows), 'sha256': payload['file_sha256']}
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:53 payload, supplied = data['payload'], data['hmac_sha256']
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:54 expected = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:57 if _digest(csv_path) != payload['file_sha256']:
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:62 return {'verified': True, 'row_count': len(rows), 'file_sha256': payload['file_sha256']}
+
+BUSCA: hmac
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py:18 p = commands.add_parser('capture', help='Criar manifesto HMAC, sem sobrescrever')
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:1 """Evidência local de snapshots sintéticos. HMAC autentica manifesto, NÃO torna arquivos imutáveis."""
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:3 import hmac
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:24 key = os.environ.get('BANKGUARD_HMAC_KEY', '')
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:26 raise ValueError('Defina BANKGUARD_HMAC_KEY com pelo menos 32 bytes, fora do Git')
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:42 tag = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:43 output = {'payload': payload, 'hmac_sha256': tag}
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:53 payload, supplied = data['payload'], data['hmac_sha256']
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:54 expected = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:55 if not hmac.compare_digest(expected, supplied):
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:56 raise ValueError('Falha na autenticação do manifesto (HMAC)')
+
+BUSCA: hashlib
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:3 import hashlib
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:27 return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:2 import hashlib
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:12 h = hashlib.sha256()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:42 tag = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:54 expected = hmac.new(_secret(), _canonical(payload), hashlib.sha256).hexdigest()
+
+BUSCA: snapshot
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:1 """Comparação local e determinística de snapshots CSV sem dependências externas."""
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:45 "warning": "Divergência não comprova fraude; snapshots não revelam mudanças intermediárias. Não contém PII."}
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:1 """Evidência local de snapshots sintéticos. HMAC autentica manifesto, NÃO torna arquivos imutáveis."""
+
+BUSCA: compare
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py:5 from .core import compare
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py:12 p = commands.add_parser('compare', help='R1 alteração, R2 inclusão, R3 exclusão')
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py:33 result = compare(args.before, args.after, args.key)
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:29 def compare(before, after, key):
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:55 if not hmac.compare_digest(expected, supplied):
+
+BUSCA: insert
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:40 inserted = sorted(b.keys() - a.keys())
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:43 "R1_modified": modified, "R2_inserted_keys": inserted,
+
+BUSCA: delete
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:41 deleted = sorted(a.keys() - b.keys())
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:44 "R3_deleted_keys": deleted, "unchanged_count": len(a.keys() & b.keys()) - len(modified),
+
+BUSCA: update
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:15 h.update(block)
+
+BUSCA: schema
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\core.py:33 raise ValueError("Schema divergente: comparar somente após validação/aprovação do contrato")
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\evidence.py:61 raise ValueError('Contrato/schema ou quantidade inconsistente')
+
+BUSCA: signature
+NAO ENCONTRADO
+
+BUSCA: evidence
+C:\Users\User\Downloads\bank-data-integrity-guard-v0.2-audit\bank-data-integrity-guard\src\bankguard\cli.py:6 from .evidence import capture, verify
+
+BUSCA: audit
+NAO ENCONTRADO
+
+BUSCA: immutable
+NAO ENCONTRADO
+
+BUSCA: authorization
+NAO ENCONTRADO
+
+=== 5. TECNOLOGIAS E INTEGRACOES ===
+raw : 0 ocorrencias
+bronze : 0 ocorrencias
+silver : 0 ocorrencias
+gold : 0 ocorrencias
+sql : 0 ocorrencias
+pyspark : 0 ocorrencias
+spark : 0 ocorrencias
+kafka : 0 ocorrencias
+airflow : 0 ocorrencias
+cdc : 0 ocorrencias
+api : 0 ocorrencias
+database : 0 ocorrencias
+connector : 0 ocorrencias
+
+=== 6. CONTRATOS E DADOS SINTETICOS ===
+
+ARQUIVO: contract.example.json
+{
+  "domain": "banking_payments_synthetic",
+  "dataset": "transactions",
+  "key": ["transaction_id"],
+  "expected_fields": ["transaction_id", "account_id", "amount", "status"],
+  "time_consistency": "PENDING: watermark/LSN and transactionally consistent snapshot",
+  "sensitive_fields": [],
+  "permissions": "read-only",
+  "approval_source": "PENDING: event/approval log",
+  "schema_version": "0.1.0"
+}
+
+ARQUIVO: after.csv
+transaction_id,account_id,amount,status
+TX001,A001,100.00,SETTLED
+TX002,A001,250.00,PENDING
+TX004,A003,150.00,PENDING
+
+ARQUIVO: before.csv
+transaction_id,account_id,amount,status
+TX001,A001,100.00,SETTLED
+TX002,A001,200.00,PENDING
+TX003,A002,300.00,SETTLED
+
+=== 7. TESTES IMPLEMENTADOS ===
+
+TESTE: test_core.py
+def test_three_rules(self):
+def test_fingerprint_independent_of_column_order(self):
+def test_missing_key_rejected(self):
+
+TESTE: test_evidence.py
+def test_capture_and_verify(self):
+def test_tampered_data_rejected(self):
+def test_tampered_manifest_rejected(self):
+def test_no_overwrite(self):
+def test_short_key_rejected(self):
+
+=== 8. DOCUMENTACAO ===
+
+DOCUMENTO: README.md
+# Bank Data Integrity Guard (BDIG)
+## Princípios
+## Componentes e status
+## Arquitetura
+## Windows / PowerShell — passo a passo
+# Descompacte o ZIP numa pasta de trabalho e entre nela
+# Configura Python e executa testes
+# Captura dois manifests HMAC de dados fictícios, verifica e compara
+## Execução manual (sem scripts)
+## Publicação GitHub — somente após conferir localmente
+# Crie no GitHub um repositório vazio (não gere README automático)
+## Estrutura
+## Limites de segurança da POC
+## Verificação de qualidade
+## Licença e uso comercial
+
+DOCUMENTO: architecture.md
+# Arquitetura de referência — fictícia, sem acesso bancário
+## Limites e ameaças
+
+DOCUMENTO: commercial.md
+# Enquadramento comercial B2B (hipótese)
+
+DOCUMENTO: connectors.md
+# Plano de conectores (não implementados)
+
+DOCUMENTO: implementation-plan.md
+# Plano de execução faseado
+
+DOCUMENTO: methodology.md
+# Metodologia auditável
+## 1. Cadastrar contrato de dados
+## 2. Definir linha de base confiável
+## 3. Comparar estados e eventos
+## 4. Validar legitimidade
+## 5. Produzir evidência
+## 6. Hipóteses que exigem resolução
+## 7. Critérios iniciais de aceite para POC
+
+DOCUMENTO: roadmap.md
+# Roadmap de maturidade
+
+DOCUMENTO: security.md
+# Segurança por desenho
+
+=== 9. GIT ===
+Repositorio Git ainda nao inicializado.
+
+=== 10. RESUMO DO INVENTARIO ===
+Modulos Python: 4
+Documentos Markdown: 8
+Arquivos de teste: 2
+
+OBSERVACAO:
+Ocorrencias de palavras nao comprovam funcionalidades.
+A avaliacao tecnica sera feita sobre o codigo e os testes.
+Nenhum banco de dados externo foi acessado.
